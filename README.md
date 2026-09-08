@@ -141,6 +141,18 @@ public function test_nothing_is_over_exposed(): void
 
 Deliberately not a scan for the attribute. With a scan, adding an attribute anywhere in the codebase publishes a table, and the reviewer of that pull request sees one line in a model rather than a change to the application's exposed surface.
 
+## Where this sits
+
+The Laravel MCP ecosystem is busy, and most of it is solving a different problem. It sorts by who the agent is working for.
+
+**Protocol and transport.** `laravel/mcp` (34 million installs, and official), `php-mcp/laravel` (225k), `opgginc/laravel-mcp-server` (71k), `kirschbaum-development/laravel-loop` (20k). These carry the tool call. What the tool hands back is left to you, and that is the gap this package fills. It is deliberately not an MCP server itself: wire a resource into a tool and let one of those handle the protocol.
+
+**Developer tooling.** `anilcancakir/laravel-agent-mcp` (44k) and `onelearningcommunity/laravel-model-explorer` (65k) point your own coding agent at your own application. The first says so plainly in its own description: no Sanctum, no user table, no write access. That is the right design for what it does, and it is the opposite of the problem here. When the only person on the other end is you, on your machine, there is no authorization boundary to get wrong.
+
+**Production exposure, with a boundary.** The case this package is for: the agent answers on behalf of a signed in user and must not return another user's rows. The closest neighbour is `mattiasgeniar/filament-mcp`, which does per-record CRUD with token auth and policy-aware access for Filament resources. If you are already on Filament, look at that first. This one works against plain Eloquent, needs no admin panel, and refuses rather than publishes when a model has no policy.
+
+Figures checked on Packagist on 8 September 2026.
+
 ## Install
 
 ```bash
@@ -152,7 +164,7 @@ Requires PHP 8.2 and Laravel 12.
 
 ## Scope
 
-This is the authorization and exposure layer. It is deliberately not an MCP server: `laravel/mcp` already is one, and is very good at it. Wire a resource into a tool and let it handle the protocol.
+This is the authorization and exposure layer, and nothing else.
 
 **Not built yet, and not pretended otherwise:** an audit trail of tool calls, relation traversal (the `relations` argument is accepted and currently unused), and a generator that emits `laravel/mcp` tool classes from a resource. The audit trail is the next one, because "what did the agent read" is the first question anyone asks after an incident.
 
