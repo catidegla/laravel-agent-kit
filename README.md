@@ -218,6 +218,53 @@ $this->app->bind(AuditSink::class, YourDatabaseSink::class);
 
 `ArraySink` ships for your own test suite, so you can assert that a tool call produced the record you expected.
 
+## Generating the tools
+
+You do not have to write the tool classes. Generate them from the attribute:
+
+```bash
+php artisan agent-kit:mcp
+```
+
+One class per declared ability, written to `app/Mcp/Tools`, and the command prints the block to paste into your server:
+
+```php
+protected array $tools = [
+    TicketListTool::class,
+    TicketGetTool::class,
+    TicketSearchTool::class,
+];
+```
+
+The bodies delegate to the resource and do nothing else, which the generated file says at the top:
+
+```php
+public function handle(Request $request, Registry $registry): Response
+{
+    $row = $registry->resource(Ticket::class)->get(
+        $request->user(),
+        $request->get('id'),
+        $request->array('include'),
+    );
+
+    if ($row === null) {
+        return Response::error('No such record, or it is not yours to read.');
+    }
+
+    return Response::structured($row);
+}
+```
+
+That is the whole handler, on purpose. The field allowlist, the policy check, the ceiling, the relation rules and the audit trail all live in the resource, so anything added to a tool runs outside every one of them. Change the attribute and run the command again rather than editing the class.
+
+The input schema is generated from the same attribute, so an agent sees which fields are filterable, which relations it may expand, and the ceiling it will be held to.
+
+**Nothing is generated from an exposure that does not hold together.** The command runs `verify()` first and writes no files if it reports anything, because a tool built on a resource with no policy fails the first time an agent calls it, which is the wrong place to find out.
+
+**An existing file is left alone** unless you pass `--force`. Somebody will have edited a generated class, and losing that quietly is worse than making them ask.
+
+`--path` and `--namespace` are there if your application does not use the defaults. `laravel/mcp` is not a dependency of this package; it is only needed by the code the generator writes.
+
 ## Where this sits
 
 The Laravel MCP ecosystem is busy, and most of it is solving a different problem. It sorts by who the agent is working for.
@@ -241,9 +288,7 @@ Requires PHP 8.2 and Laravel 12.
 
 ## Scope
 
-This is the authorization and exposure layer, and nothing else.
-
-**Not built yet, and not pretended otherwise:** a generator that emits `laravel/mcp` tool classes from a resource.
+This is the authorization and exposure layer, and nothing else. It is deliberately not an MCP server: `laravel/mcp` already is one and is very good at it, so the generator emits tools for it rather than competing with it.
 
 ## Testing
 
@@ -252,7 +297,7 @@ composer install
 vendor/bin/phpunit
 ```
 
-49 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, that no field value ever reaches the audit record, and that a relation cannot reach a model nobody exposed.
+58 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, that no field value ever reaches the audit record, that a relation cannot reach a model nobody exposed, and that a generated tool class loads and serialises through laravel/mcp itself rather than merely looking right.
 
 ## License
 

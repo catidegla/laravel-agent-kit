@@ -8,6 +8,7 @@ use Catidegla\AgentKit\Audit\AuditSink;
 use Catidegla\AgentKit\Audit\AuditTrail;
 use Catidegla\AgentKit\Audit\LogSink;
 use Catidegla\AgentKit\Audit\NullSink;
+use Catidegla\AgentKit\Console\GenerateMcpToolsCommand;
 use Illuminate\Support\ServiceProvider;
 
 class AgentKitServiceProvider extends ServiceProvider
@@ -40,6 +41,8 @@ class AgentKitServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
+            $this->commands([GenerateMcpToolsCommand::class]);
+
             $this->publishes([
                 __DIR__.'/../config/agent-kit.php' => config_path('agent-kit.php'),
             ], 'agent-kit-config');
