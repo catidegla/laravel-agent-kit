@@ -253,7 +253,10 @@ final class ExposureTest extends TestCase
     #[Test]
     public function verify_catches_a_model_that_does_not_exist(): void
     {
-        $problems = (new Registry(['App\\Models\\Ghost'])->verify());
+        // The closing paren goes after the constructor, not after the call.
+        // "new Registry(...)->verify()" is PHP 8.4 syntax and is a parse error
+        // on 8.2 and 8.3, which php -l cannot tell you when it runs on 8.4.
+        $problems = (new Registry(['App\\Models\\Ghost']))->verify();
 
         $this->assertStringContainsString('does not exist', implode("\n", $problems));
     }
