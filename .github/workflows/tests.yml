@@ -1,0 +1,50 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+
+    name: PHP ${{ matrix.php }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - run: composer update --prefer-dist --no-interaction --no-progress
+      - run: vendor/bin/phpunit
+
+  guarantees:
+    name: Security guarantees
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+      - run: composer update --prefer-dist --no-interaction --no-progress
+
+      # These are the claims on the README. If any one of them stops holding,
+      # the package is actively misleading rather than merely broken, so they
+      # get their own job rather than blending into a matrix of green checks.
+      - name: The claims that matter still hold
+        run: |
+          vendor/bin/phpunit --filter 'undeclared_columns_never_leave_the_application|one_user_never_sees_another_users_records|a_model_with_no_policy_is_refused_rather_than_published|a_denied_record_and_a_missing_one_answer_identically|an_agent_cannot_page_a_table_out_of_the_application|filtering_on_an_undeclared_field_is_refused'
