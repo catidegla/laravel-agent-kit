@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Catidegla\AgentKit;
 
+use Catidegla\AgentKit\Audit\AuditTrail;
 use Catidegla\AgentKit\Exceptions\NotExposedException;
 use Catidegla\AgentKit\Exposure\Resource;
 
@@ -22,7 +23,10 @@ final class Registry
     private array $resolved = [];
 
     /** @param string[] $modelClasses */
-    public function __construct(private array $modelClasses = []) {}
+    public function __construct(
+        private array $modelClasses = [],
+        private readonly ?AuditTrail $audit = null,
+    ) {}
 
     /** @param string[] $modelClasses */
     public function register(array $modelClasses): self
@@ -48,7 +52,7 @@ final class Registry
             throw NotExposedException::notAResource($modelClass);
         }
 
-        return $this->resolved[$modelClass] ??= Resource::for($modelClass);
+        return $this->resolved[$modelClass] ??= Resource::for($modelClass, $this->audit);
     }
 
     /** @return array<string, Resource> keyed by tool name */

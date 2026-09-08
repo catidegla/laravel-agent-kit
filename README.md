@@ -141,6 +141,47 @@ public function test_nothing_is_over_exposed(): void
 
 Deliberately not a scan for the attribute. With a scan, adding an attribute anywhere in the codebase publishes a table, and the reviewer of that pull request sees one line in a model rather than a change to the application's exposed surface.
 
+## What the agent read
+
+The first question anyone asks after an incident, and it cannot be answered later if nothing was written down at the time. Every call is recorded, before its result is returned.
+
+```
+agent 41 ticket.get -> denied (0 returned, 1 denied)
+```
+
+**Identifiers and field names, never field values.** A trail that stored the rows would become a second copy of every record an agent ever read, in a table nobody wrote a policy for, and the log would be a softer target than the data it was meant to protect. To see values, read those ids from the source, where the policy still applies.
+
+The exception is the arguments, which are what the agent supplied rather than what the database returned. A search term is kept, because what it was looking for is half of any incident. Read it back as untrusted text; a prompt can put anything there.
+
+**A denied read and a missing one are recorded apart**, although the agent still cannot tell them apart. `get` returns `null` for both, so ids cannot be enumerated. The trail says which it was, because the operator needs to know and the agent never sees the record.
+
+Refused calls are recorded too. One filter on an unexposed field is a mistake. A run of them is probing.
+
+### It fails closed here as well
+
+A sink that refuses takes the read down with it:
+
+```
+AuditFailedException: The audit sink refused to record ticket.get, so the
+result was withheld rather than served unrecorded.
+```
+
+This is the least popular decision in the package, so here is the reasoning. A trail with silent gaps cannot answer the question it exists for, and the moment a gap opens is exactly the moment an attacker would choose to be reading. If availability matters more to you than a complete record, that is a legitimate trade and it is yours to make:
+
+```php
+'audit' => ['strict' => false],
+```
+
+### Where it goes
+
+The default writes to a log channel, so it works on a fresh install with no migration and no table to forget. A log file rotates, so bind your own store when "what did the agent read three months ago" becomes a query you need to run:
+
+```php
+$this->app->bind(AuditSink::class, YourDatabaseSink::class);
+```
+
+`ArraySink` ships for your own test suite, so you can assert that a tool call produced the record you expected.
+
 ## Where this sits
 
 The Laravel MCP ecosystem is busy, and most of it is solving a different problem. It sorts by who the agent is working for.
@@ -166,7 +207,7 @@ Requires PHP 8.2 and Laravel 12.
 
 This is the authorization and exposure layer, and nothing else.
 
-**Not built yet, and not pretended otherwise:** an audit trail of tool calls, relation traversal (the `relations` argument is accepted and currently unused), and a generator that emits `laravel/mcp` tool classes from a resource. The audit trail is the next one, because "what did the agent read" is the first question anyone asks after an incident.
+**Not built yet, and not pretended otherwise:** relation traversal (the `relations` argument is accepted and currently unused), and a generator that emits `laravel/mcp` tool classes from a resource.
 
 ## Testing
 
@@ -175,7 +216,7 @@ composer install
 vendor/bin/phpunit
 ```
 
-20 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one.
+34 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, and that no field value ever reaches the audit record.
 
 ## License
 
