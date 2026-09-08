@@ -109,6 +109,42 @@ $resource->list($user, [], 1000);
 
 One row beyond the limit is fetched purely so `truncated` can be honest. A tool that returns exactly the limit with no signal makes an agent believe it has seen everything.
 
+## Relations do not widen exposure
+
+An agent can ask for a relation to be expanded, and only the ones you declared:
+
+```php
+#[AgentResource(
+    fields: ['id', 'subject', 'status'],
+    relations: ['comments', 'author'],
+)]
+class Ticket extends Model {}
+```
+
+```php
+$resource->get($user, $id, include: ['comments']);
+```
+
+**The target's own rules apply, not this one's.** Expanding `comments` returns exactly what `Comment` declares in its own attribute, checked against `Comment`'s own policy, for the same signed in user. A relation composes two exposures that already existed. It never creates a third.
+
+So a relation cannot reach a model you never exposed. If the target is not a registered resource the call is refused, because there would be no field list and no policy to apply:
+
+```
+Ticket declares "notes" as traversable but PrivateNote is not a registered
+resource. A relation is not a way to reach a model that was never exposed.
+```
+
+To make a model reachable through relations without also publishing a tool that can enumerate it, register it with no abilities of its own:
+
+```php
+#[AgentResource(fields: ['id', 'name'], abilities: [])]
+class User extends Authenticatable {}
+```
+
+**One level, never two.** An expanded record does not itself expand relations. The next hop is another tool call, separately authorized and separately recorded. Walking the object graph inside a single call is how one question becomes a full export.
+
+A to-many relation is capped by the target's own ceiling and reports truncation rather than trimming quietly. A to-one the viewer may not see comes back as `null`. Relations are eager loaded, so expanding across a page of results costs one extra query rather than one per row, and there is a test asserting that.
+
 ## Verify before you deploy
 
 ```php
@@ -207,7 +243,7 @@ Requires PHP 8.2 and Laravel 12.
 
 This is the authorization and exposure layer, and nothing else.
 
-**Not built yet, and not pretended otherwise:** relation traversal (the `relations` argument is accepted and currently unused), and a generator that emits `laravel/mcp` tool classes from a resource.
+**Not built yet, and not pretended otherwise:** a generator that emits `laravel/mcp` tool classes from a resource.
 
 ## Testing
 
@@ -216,7 +252,7 @@ composer install
 vendor/bin/phpunit
 ```
 
-34 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, and that no field value ever reaches the audit record.
+49 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, that no field value ever reaches the audit record, and that a relation cannot reach a model nobody exposed.
 
 ## License
 

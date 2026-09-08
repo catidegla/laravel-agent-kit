@@ -39,6 +39,7 @@ final class AuditEvent
      * @param array<int, mixed>    $ids        identifiers of the records returned
      * @param string[]             $fields     field names exposed, not their values
      * @param int                  $denied     records withheld by policy
+     * @param array<string, array>  $related    relation name to the ids reached through it
      */
     public function __construct(
         public readonly string $resource,
@@ -51,6 +52,7 @@ final class AuditEvent
         public readonly array $fields = [],
         public readonly int $denied = 0,
         public readonly bool $truncated = false,
+        public readonly array $related = [],
         public readonly ?string $at = null,
     ) {}
 
@@ -70,6 +72,7 @@ final class AuditEvent
             'returned' => count($this->ids),
             'denied' => $this->denied,
             'truncated' => $this->truncated,
+            'related' => $this->related,
         ];
     }
 
@@ -87,6 +90,13 @@ final class AuditEvent
             count($this->ids),
             $this->denied,
             $this->truncated ? ', truncated' : '',
-        );
+        ).($this->related === [] ? '' : sprintf(
+            ' via %s',
+            implode(', ', array_map(
+                fn (string $name, array $ids): string => $name.'['.count($ids).']',
+                array_keys($this->related),
+                $this->related,
+            )),
+        ));
     }
 }

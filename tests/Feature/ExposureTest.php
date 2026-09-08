@@ -7,9 +7,11 @@ namespace Catidegla\AgentKit\Tests\Feature;
 use Catidegla\AgentKit\Exceptions\NotExposedException;
 use Catidegla\AgentKit\Exposure\Resource;
 use Catidegla\AgentKit\Registry;
+use Catidegla\AgentKit\Tests\Comment;
 use Catidegla\AgentKit\Tests\Leaky;
 use Catidegla\AgentKit\Tests\PrivateNote;
 use Catidegla\AgentKit\Tests\TestCase;
+use Catidegla\AgentKit\Tests\TestUser;
 use Catidegla\AgentKit\Tests\Ticket;
 use Catidegla\AgentKit\Tests\Unpoliced;
 use PHPUnit\Framework\Attributes\Test;
@@ -247,7 +249,9 @@ final class ExposureTest extends TestCase
     #[Test]
     public function verify_passes_on_a_correctly_configured_resource(): void
     {
-        $this->assertSame([], (new Registry([Ticket::class]))->verify());
+        // Ticket declares relations now, and a relation target has to be a
+        // registered resource in its own right, so all three are listed.
+        $this->assertSame([], (new Registry([Ticket::class, Comment::class, TestUser::class]))->verify());
     }
 
     #[Test]

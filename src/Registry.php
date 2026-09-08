@@ -7,6 +7,7 @@ namespace Catidegla\AgentKit;
 use Catidegla\AgentKit\Audit\AuditTrail;
 use Catidegla\AgentKit\Exceptions\NotExposedException;
 use Catidegla\AgentKit\Exposure\Resource;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
  * The list of what an agent can reach.
@@ -52,7 +53,11 @@ final class Registry
             throw NotExposedException::notAResource($modelClass);
         }
 
-        return $this->resolved[$modelClass] ??= Resource::for($modelClass, $this->audit);
+        return $this->resolved[$modelClass] ??= Resource::for(
+            $modelClass,
+            $this->audit,
+            fn (string $target): ?Resource => $this->relatedResource($target),
+        );
     }
 
     /** @return array<string, Resource> keyed by tool name */
@@ -71,6 +76,24 @@ final class Registry
     public function byName(string $name): ?Resource
     {
         return $this->all()[$name] ?? null;
+    }
+
+    /**
+     * A relation is only ever followed into a model that is registered in its
+     * own right, so the target brings its own field list and its own policy.
+     * Anything else would make a relation a way round the exposure list.
+     */
+    private function relatedResource(string $modelClass): ?Resource
+    {
+        if (! in_array($modelClass, $this->modelClasses, true)) {
+            return null;
+        }
+
+        try {
+            return $this->resource($modelClass);
+        } catch (NotExposedException) {
+            return null;
+        }
     }
 
     /**
@@ -129,6 +152,34 @@ final class Registry
                     class_basename($modelClass),
                     implode(', ', $undeclaredFilters),
                 );
+            }
+
+            foreach ($attribute->relations as $relationName) {
+                $model = new $modelClass();
+
+                if (! method_exists($model, $relationName)) {
+                    $problems[] = NotExposedException::relationMissing($modelClass, $relationName)->getMessage();
+                    continue;
+                }
+
+                $relation = $model->{$relationName}();
+
+                if (! $relation instanceof Relation) {
+                    $problems[] = NotExposedException::relationMissing($modelClass, $relationName)->getMessage();
+                    continue;
+                }
+
+                $target = $relation->getRelated()::class;
+
+                // Caught here rather than when an agent asks, which is the
+                // whole point of a deploy check.
+                if (! in_array($target, $this->modelClasses, true)) {
+                    $problems[] = NotExposedException::relationTargetNotRegistered(
+                        $modelClass,
+                        $relationName,
+                        $target,
+                    )->getMessage();
+                }
             }
         }
 
