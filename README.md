@@ -2,7 +2,7 @@
 
 # Laravel Agent Kit
 
-**Expose Eloquent models to an AI agent without handing it your database.**
+Expose Eloquent models to an AI agent without handing it your database.
 
 Field allowlists, per-record policy checks, result ceilings. Every one of them fails closed.
 
@@ -31,7 +31,7 @@ class TicketTool extends Tool
 
 It returns every column, including the ones nothing renders. It has no idea who is asking. And nothing stops an agent iterating ids until it has the table.
 
-This package makes those three the default rather than the thing you remember to add.
+This package makes those three the default, so they are not something you have to remember.
 
 ```php
 #[AgentResource(
@@ -67,7 +67,7 @@ $result = $resource->list($alice);
 // ['rows' => [...alice's only...], 'denied' => 1, 'truncated' => false]
 ```
 
-`denied` is reported rather than silently dropped. A tool that quietly removes rows makes an agent believe a list is complete when it is not, and that produces confidently wrong answers instead of errors.
+`denied` is reported, not silently dropped. A tool that quietly removes rows makes an agent believe a list is complete when it is not, and that produces confidently wrong answers instead of errors.
 
 Filtering the query by `user_id` is not a substitute for this. It works until the next person adds a scope or a relation, and then it does not, quietly.
 
@@ -83,7 +83,7 @@ Filtering the query by `user_id` is not a substitute for this. It works until th
 | Field not in `fields` but listed in `searchable` | Caught by `verify()` |
 | Agent is unauthenticated | Sees nothing |
 
-The second row is the important one. Forgetting to write a policy must not silently publish a table, so a model annotated without one throws rather than being exposed openly.
+The second row is the important one. Forgetting to write a policy must not silently publish a table, so a model annotated without one throws instead of being exposed.
 
 The last one is subtle: a field you can search but cannot read still leaks, one query at a time. `verify()` treats that as a configuration error.
 
@@ -100,7 +100,7 @@ Distinguishing them turns the tool into an oracle for which ids exist.
 
 ## An agent cannot page out your table
 
-`maxResults` is a ceiling, not a default. Whatever an agent asks for, it gets at most what the resource declares, and truncation is reported rather than hidden:
+`maxResults` is a ceiling, not a default. Whatever an agent asks for, it gets at most what the resource declares, and truncation is reported, never hidden:
 
 ```php
 $resource->list($user, [], 1000);
@@ -125,7 +125,7 @@ class Ticket extends Model {}
 $resource->get($user, $id, include: ['comments']);
 ```
 
-**The target's own rules apply, not this one's.** Expanding `comments` returns exactly what `Comment` declares in its own attribute, checked against `Comment`'s own policy, for the same signed in user. A relation composes two exposures that already existed. It never creates a third.
+The target's own rules apply, not this one's. Expanding `comments` returns exactly what `Comment` declares in its own attribute, checked against `Comment`'s own policy, for the same signed in user. A relation composes two exposures that already existed. It never creates a third.
 
 So a relation cannot reach a model you never exposed. If the target is not a registered resource the call is refused, because there would be no field list and no policy to apply:
 
@@ -141,9 +141,9 @@ To make a model reachable through relations without also publishing a tool that 
 class User extends Authenticatable {}
 ```
 
-**One level, never two.** An expanded record does not itself expand relations. The next hop is another tool call, separately authorized and separately recorded. Walking the object graph inside a single call is how one question becomes a full export.
+One level, never two. An expanded record does not itself expand relations. The next hop is another tool call, separately authorized and separately recorded. Walking the object graph inside a single call is how one question becomes a full export.
 
-A to-many relation is capped by the target's own ceiling and reports truncation rather than trimming quietly. A to-one the viewer may not see comes back as `null`. Relations are eager loaded, so expanding across a page of results costs one extra query rather than one per row, and there is a test asserting that.
+A to-many relation is capped by the target's own ceiling and reports truncation instead of trimming quietly. A to-one the viewer may not see comes back as `null`. Relations are eager loaded, so expanding across a page of results costs one extra query rather than one per row, and there is a test asserting that.
 
 ## Verify before you deploy
 
@@ -157,7 +157,7 @@ $problems = app(Registry::class)->verify();
 
 Every problem in one pass, not the first one. Fixing a configuration should not be a game of whack-a-mole where each run reveals one more thing.
 
-Put it in a test and a misconfigured model fails the build rather than being discovered when an agent asks for it in production:
+Put it in a test and a misconfigured model fails the build, long before an agent asks for it in production:
 
 ```php
 public function test_nothing_is_over_exposed(): void
@@ -185,7 +185,7 @@ The first question anyone asks after an incident, and it cannot be answered late
 agent 41 ticket.get -> denied (0 returned, 1 denied)
 ```
 
-**Identifiers and field names, never field values.** A trail that stored the rows would become a second copy of every record an agent ever read, in a table nobody wrote a policy for, and the log would be a softer target than the data it was meant to protect. To see values, read those ids from the source, where the policy still applies.
+Identifiers and field names, never field values. A trail that stored the rows would become a second copy of every record an agent ever read, in a table nobody wrote a policy for, and the log would be a softer target than the data it was meant to protect. To see values, read those ids from the source, where the policy still applies.
 
 The exception is the arguments, which are what the agent supplied rather than what the database returned. A search term is kept, because what it was looking for is half of any incident. Read it back as untrusted text; a prompt can put anything there.
 
@@ -255,11 +255,11 @@ public function handle(Request $request, Registry $registry): Response
 }
 ```
 
-That is the whole handler, on purpose. The field allowlist, the policy check, the ceiling, the relation rules and the audit trail all live in the resource, so anything added to a tool runs outside every one of them. Change the attribute and run the command again rather than editing the class.
+That is the whole handler, on purpose. The field allowlist, the policy check, the ceiling, the relation rules and the audit trail all live in the resource, so anything added to a tool runs outside every one of them. Change the attribute and run the command again instead of editing the class.
 
 The input schema is generated from the same attribute, so an agent sees which fields are filterable, which relations it may expand, and the ceiling it will be held to.
 
-**Nothing is generated from an exposure that does not hold together.** The command runs `verify()` first and writes no files if it reports anything, because a tool built on a resource with no policy fails the first time an agent calls it, which is the wrong place to find out.
+Nothing is generated from an exposure that does not hold together. The command runs `verify()` first and writes no files if it reports anything, because a tool built on a resource with no policy fails the first time an agent calls it, which is the wrong place to find out.
 
 **An existing file is left alone** unless you pass `--force`. Somebody will have edited a generated class, and losing that quietly is worse than making them ask.
 
@@ -269,11 +269,11 @@ The input schema is generated from the same attribute, so an agent sees which fi
 
 The Laravel MCP ecosystem is busy, and most of it is solving a different problem. It sorts by who the agent is working for.
 
-**Protocol and transport.** `laravel/mcp` (34 million installs, and official), `php-mcp/laravel` (225k), `opgginc/laravel-mcp-server` (71k), `kirschbaum-development/laravel-loop` (20k). These carry the tool call. What the tool hands back is left to you, and that is the gap this package fills. It is deliberately not an MCP server itself: wire a resource into a tool and let one of those handle the protocol.
+Protocol and transport. `laravel/mcp` (34 million installs, and official), `php-mcp/laravel` (225k), `opgginc/laravel-mcp-server` (71k), `kirschbaum-development/laravel-loop` (20k). These carry the tool call. What the tool hands back is left to you, and that is the gap this package fills. It is deliberately not an MCP server itself: wire a resource into a tool and let one of those handle the protocol.
 
-**Developer tooling.** `anilcancakir/laravel-agent-mcp` (44k) and `onelearningcommunity/laravel-model-explorer` (65k) point your own coding agent at your own application. The first says so plainly in its own description: no Sanctum, no user table, no write access. That is the right design for what it does, and it is the opposite of the problem here. When the only person on the other end is you, on your machine, there is no authorization boundary to get wrong.
+Developer tooling. `anilcancakir/laravel-agent-mcp` (44k) and `onelearningcommunity/laravel-model-explorer` (65k) point your own coding agent at your own application. The first says so plainly in its own description: no Sanctum, no user table, no write access. That is the right design for what it does, and it is the opposite of the problem here. When the only person on the other end is you, on your machine, there is no authorization boundary to get wrong.
 
-**Production exposure, with a boundary.** The case this package is for: the agent answers on behalf of a signed in user and must not return another user's rows. The closest neighbour is `mattiasgeniar/filament-mcp`, which does per-record CRUD with token auth and policy-aware access for Filament resources. If you are already on Filament, look at that first. This one works against plain Eloquent, needs no admin panel, and refuses rather than publishes when a model has no policy.
+Production exposure, with a boundary. The case this package is for: the agent answers on behalf of a signed in user and must not return another user's rows. The closest neighbour is `mattiasgeniar/filament-mcp`, which does per-record CRUD with token auth and policy-aware access for Filament resources. If you are already on Filament, look at that first. This one works against plain Eloquent, needs no admin panel, and refuses when a model has no policy.
 
 Figures checked on Packagist on 8 September 2026.
 
@@ -297,7 +297,7 @@ composer install
 vendor/bin/phpunit
 ```
 
-58 tests. They assert the security properties directly rather than describing them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, that no field value ever reaches the audit record, that a relation cannot reach a model nobody exposed, and that a generated tool class loads and serialises through laravel/mcp itself rather than merely looking right.
+58 tests. They assert the security properties directly, not just describe them: that `internal_notes` is absent from a payload, that Bob's ticket is not in Alice's list, that a model without a policy throws, that a denied `get` is indistinguishable from a missing one, that no field value ever reaches the audit record, that a relation cannot reach a model nobody exposed, and that a generated tool class loads and serialises through laravel/mcp itself, not merely looking right.
 
 ## License
 
