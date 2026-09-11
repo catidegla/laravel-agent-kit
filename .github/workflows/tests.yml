@@ -15,8 +15,20 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.2', '8.3', '8.4']
+        laravel: ['12', '13']
+        include:
+          - laravel: '12'
+            testbench: '^10.0'
+          - laravel: '13'
+            testbench: '^11.0'
+        exclude:
+          # Laravel 13 requires PHP 8.3, which is its own floor and not this
+          # package's. Somebody on 8.2 resolves to 12, so this pairing cannot
+          # exist to be tested.
+          - php: '8.2'
+            laravel: '13'
 
-    name: PHP ${{ matrix.php }}
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
 
     steps:
       - uses: actions/checkout@v5
@@ -27,6 +39,10 @@ jobs:
           extensions: mbstring, pdo_sqlite, sqlite3
           coverage: none
 
+      # Pinned rather than left to resolve, so each row tests the Laravel its
+      # name claims. Without the pin every row above PHP 8.2 would pick the
+      # newest testbench and the Laravel 12 column would be testing 13.
+      - run: composer require --dev --no-interaction --no-update "orchestra/testbench:${{ matrix.testbench }}"
       - run: composer update --prefer-dist --no-interaction --no-progress
       - run: vendor/bin/phpunit
 

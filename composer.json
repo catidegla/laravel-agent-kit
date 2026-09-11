@@ -1,61 +1,61 @@
 {
-  "name": "catidegla/laravel-agent-kit",
-  "description": "Expose Eloquent models to an AI agent without handing it your database. Field allowlists, per-record policy checks, result ceilings and an audit trail, all failing closed.",
-  "keywords": [
-    "laravel",
-    "mcp",
-    "model-context-protocol",
-    "ai",
-    "agent",
-    "security",
-    "authorization",
-    "eloquent",
-    "llm"
-  ],
-  "homepage": "https://github.com/catidegla/laravel-agent-kit",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Christ-loisele Atidegla",
-      "homepage": "https://github.com/catidegla",
-      "role": "Developer"
-    }
-  ],
-  "require": {
-    "php": "^8.2",
-    "illuminate/auth": "^12.0",
-    "illuminate/contracts": "^12.0",
-    "illuminate/database": "^12.0",
-    "illuminate/support": "^12.0"
-  },
-  "require-dev": {
-    "laravel/mcp": "^1.0@beta",
-    "orchestra/testbench": "^10.0",
-    "phpunit/phpunit": "^11.0|^12.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "Catidegla\\AgentKit\\": "src/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Catidegla\\AgentKit\\Tests\\": "tests/"
-    }
-  },
-  "scripts": {
-    "test": "vendor/bin/phpunit"
-  },
-  "config": {
-    "sort-packages": true
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "Catidegla\\AgentKit\\AgentKitServiceProvider"
-      ]
-    }
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true
+    "name": "catidegla/laravel-agent-kit",
+    "description": "Expose Eloquent models to an AI agent without handing it your database. Field allowlists, per-record policy checks, result ceilings and an audit trail, all failing closed.",
+    "keywords": [
+        "laravel",
+        "mcp",
+        "model-context-protocol",
+        "ai",
+        "agent",
+        "security",
+        "authorization",
+        "eloquent",
+        "llm"
+    ],
+    "homepage": "https://github.com/catidegla/laravel-agent-kit",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christ-loisele Atidegla",
+            "homepage": "https://github.com/catidegla",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/auth": "^12.0|^13.0",
+        "illuminate/contracts": "^12.0|^13.0",
+        "illuminate/database": "^12.0|^13.0",
+        "illuminate/support": "^12.0|^13.0"
+    },
+    "require-dev": {
+        "laravel/mcp": "^1.0@beta",
+        "orchestra/testbench": "^10.0|^11.0",
+        "phpunit/phpunit": "^11.0|^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Catidegla\\AgentKit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Catidegla\\AgentKit\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Catidegla\\AgentKit\\AgentKitServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
